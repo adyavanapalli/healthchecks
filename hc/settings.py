@@ -192,6 +192,26 @@ if os.getenv("DB") in ["mysql", "mariadb"]:
         }
     }
 
+if os.getenv("DB") == "cockroach":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django_cockroachdb",
+            "HOST": os.getenv("DB_HOST", ""),
+            "PORT": os.getenv("DB_PORT", "26257"),
+            "NAME": os.getenv("DB_NAME", "hc"),
+            "USER": os.getenv("DB_USER", "root"),
+            "PASSWORD": os.getenv("DB_PASSWORD", ""),
+            "CONN_MAX_AGE": envint("DB_CONN_MAX_AGE", "0"),
+            "TEST": {"CHARSET": "UTF8"},
+            "OPTIONS": {
+                "sslmode": os.getenv("DB_SSLMODE", "prefer"),
+                "target_session_attrs": os.getenv(
+                    "DB_TARGET_SESSION_ATTRS", "read-write"
+                ),
+            },
+        }
+    }
+
 USE_TZ = True
 TIME_ZONE = "UTC"
 USE_I18N = False
