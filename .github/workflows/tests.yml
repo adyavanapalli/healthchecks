@@ -48,7 +48,7 @@ jobs:
               if: matrix.db == 'cockroach'
               run: |
                 curl -L https://binaries.cockroachdb.com/cockroach-v25.1.2.linux-amd64.tgz | tar -xz --strip-components=1
-                ./cockroach start-single-node --insecure --background
+                ./cockroach start-single-node --insecure --background --listen-addr=localhost:8080 --sql-addr=localhost:26257
 
                 # DEBUG
                 sudo ps aux | grep cockroach
