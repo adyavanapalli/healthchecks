@@ -196,7 +196,7 @@ if os.getenv("DB") == "cockroach":
     DATABASES = {
         "default": {
             "ENGINE": "django_cockroachdb",
-            "HOST": os.getenv("DB_HOST", ""),
+            "HOST": os.getenv("DB_HOST", "localhost"),
             "PORT": os.getenv("DB_PORT", "26257"),
             "NAME": os.getenv("DB_NAME", "hc"),
             "USER": os.getenv("DB_USER", "root"),
