@@ -49,6 +49,10 @@ jobs:
               run: |
                 curl -L https://binaries.cockroachdb.com/cockroach-v25.1.2.linux-amd64.tgz | tar -xz --strip-components=1
                 ./cockroach start-single-node --insecure --background
+
+                # DEBUG
+                sudo ps aux | grep cockroach
+                sudo ss -tulpn
             - name: Install Dependencies
               run: |
                   sudo apt-get update -qq
