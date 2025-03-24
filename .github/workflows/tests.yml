@@ -15,15 +15,19 @@ jobs:
                 python-version: ["3.10", "3.11", "3.12"]
                 include:
                     - db: postgres
+                      db_host: ''
                       db_user: runner
                       db_password: ""
                     - db: mysql
+                      db_host: ''
                       db_user: root
                       db_password: root
                     - db: mariadb
+                      db_host: ''
                       db_user: root
                       db_password: ""
                     - db: cockroach
+                      db_host: ./var/run/cockroachdb
                       db_user: root
                       db_password: ""
 
@@ -48,13 +52,11 @@ jobs:
               if: matrix.db == 'cockroach'
               run: |
                 curl -sL https://binaries.cockroachdb.com/cockroach-v25.1.2.linux-amd64.tgz | tar -xz --strip-components=1
-                mkdir -p ./run/cockroachdb
+                mkdir -p ./var/run/cockroachdb
                 ./cockroach start-single-node --insecure \
                                               --advertise-addr=localhost:26257 \
-                                              --socket-dir ./run/cockroachdb \
+                                              --socket-dir ./var/run/cockroachdb \
                                               --background
-
-                echo DB_HOST='./run/cockroachdb' >> "GITHUB_ENV"
 
                 # DEBUG
                 sudo ps aux | grep cockroach
@@ -69,7 +71,7 @@ jobs:
             - name: Run Tests
               env:
                   DB: ${{ matrix.db }}
-                  DB_HOST: ./run/cockroachdb
+                  DB_HOST: ${{ matrix.db_host }}
                   DB_USER: ${{ matrix.db_user }}
                   DB_PASSWORD: ${{ matrix.db_password }}
                   SECRET_KEY: dummy-key
