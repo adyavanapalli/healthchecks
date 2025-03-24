@@ -54,6 +54,8 @@ jobs:
                                               --socket-dir ./run/cockroachdb \
                                               --background
 
+                echo DB_HOST='./run/cockroachdb' >> "GITHUB_ENV"
+
                 # DEBUG
                 sudo ps aux | grep cockroach
                 sudo ss -tulpn
