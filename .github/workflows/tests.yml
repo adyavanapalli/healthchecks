@@ -50,6 +50,8 @@ jobs:
                 curl -L https://binaries.cockroachdb.com/cockroach-v25.1.2.linux-amd64.tgz | tar -xz --strip-components=1
                 ./cockroach start-single-node --insecure --advertise-addr=localhost:26257 --background
 
+                echo DB_SSLMODE='disable' >> "$GITHUB_ENV"
+
                 # DEBUG
                 sudo ps aux | grep cockroach
                 sudo ss -tulpn
