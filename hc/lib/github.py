@@ -1,3 +1,4 @@
+import logging
 import time
 
 import jwt
@@ -5,6 +6,12 @@ from django.conf import settings
 from pydantic import BaseModel
 
 from hc.lib import curl
+
+logger = logging.getLogger(__name__)
+
+
+class BadCredentials(Exception):
+    pass
 
 
 class OAuthResponse(BaseModel):
@@ -34,7 +41,9 @@ class Installation(BaseModel):
 
 
 class InstallationsResponse(BaseModel):
-    installations: list[Installation]
+    # Error responses contain a "message" field
+    message: str | None = None
+    installations: list[Installation] | None = None
 
 
 def get_installation_ids(user_access_token: str) -> list[int]:
@@ -47,6 +56,18 @@ def get_installation_ids(user_access_token: str) -> list[int]:
     headers = {"Authorization": f"Bearer {user_access_token}"}
     result = curl.get(url, headers=headers)
     doc = InstallationsResponse.model_validate_json(result.content, strict=True)
+    if doc.message == "Bad credentials":
+        # GitHub returns "Bad Credential" response when:
+        # - We have acquired a valid user access token,
+        # - The user then revokes the access token
+        #   (removes us from Settings / Applications / Authorized GitHub Apps)
+        # - We then try to use the token to load user's installations
+        raise BadCredentials()
+
+    if doc.installations is None:
+        logger.warning(b"Unexpected response from GitHub: {result.content}")
+
+    assert doc.installations is not None
     return [item.id for item in doc.installations]
 
 

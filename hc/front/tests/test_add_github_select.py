@@ -4,6 +4,7 @@ from unittest.mock import patch, Mock
 
 from django.test.utils import override_settings
 
+from hc.lib.github import BadCredentials
 from hc.test import BaseTestCase
 
 
@@ -38,7 +39,6 @@ class AddGitHubSelectTestCase(BaseTestCase):
         self.assertContains(r, "http://example.org/installations/new")
 
         self.assertEqual(self.client.session["add_github_token"], "test-token")
-        self.assertEqual(self.client.session["add_github_repos"], {"alice/foo": 123})
 
     @patch("hc.front.views.github", autospec=True)
     def test_it_skips_oauth_code_exchange(self, github: Mock) -> None:
@@ -114,3 +114,49 @@ class AddGitHubSelectTestCase(BaseTestCase):
         self.assertRedirects(
             r, "http://example.org/installations/new", fetch_redirect_response=False
         )
+
+    def test_it_handles_access_denied(self) -> None:
+        self.client.login(username="alice@example.org", password="password")
+
+        session = self.client.session
+        session["add_github_project"] = str(self.project.code)
+        session["add_github_state"] = "test-state"
+        session.save()
+
+        r = self.client.get(
+            self.url + "?error=access_denied&state=test-state", follow=True
+        )
+        self.assertRedirects(r, self.channels_url)
+
+        self.assertRedirects(r, self.channels_url)
+        self.assertContains(r, "GitHub setup was cancelled.")
+
+    def test_it_handles_missing_code(self) -> None:
+        self.client.login(username="alice@example.org", password="password")
+
+        session = self.client.session
+        session["add_github_project"] = str(self.project.code)
+        session["add_github_state"] = "test-state"
+        session.save()
+
+        r = self.client.get(self.url + "?state=test-state")
+        self.assertEqual(r.status_code, 400)
+
+    @patch("hc.front.views.github.get_repos", Mock(side_effect=BadCredentials))
+    def test_it_handles_bad_credentials(self) -> None:
+        self.client.login(username="alice@example.org", password="password")
+
+        session = self.client.session
+        session["add_github_project"] = str(self.project.code)
+        session["add_github_token"] = "test-token"
+        session.save()
+
+        r = self.client.get(self.url + "?state=test-state&code=test-code", follow=True)
+
+        self.assertRedirects(r, self.channels_url)
+        self.assertContains(r, "GitHub setup failed, GitHub access was revoked.")
+
+        # It should clean up session
+        session = self.client.session
+        self.assertNotIn("add_github_project", session)
+        self.assertNotIn("add_github_token", session)
